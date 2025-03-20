@@ -13,6 +13,12 @@
 The pin configurations are defined by EDBG_CDC_SERCOM_PINMUX_PAD0 through EDBG_CDC_SERCOM_PINMUX_PAD3. These pins are used for the UART communication between the microcontroller and the computer.
 
 - **2. Where on the circuit board can you attach / solder to?**
+#define EDBG_CDC_SERCOM_PINMUX_PAD0  PINMUX_UNUSED
+#define EDBG_CDC_SERCOM_PINMUX_PAD1  PINMUX_UNUSED
+#define EDBG_CDC_SERCOM_PINMUX_PAD2  PINMUX_PB10D_SERCOM4_PAD2
+#define EDBG_CDC_SERCOM_PINMUX_PAD3  PINMUX_PB11D_SERCOM4_PAD3
+so I will attach to PB10 or PB11
+
 
 - **3. What are critical settings for the logic analyzer?**
 

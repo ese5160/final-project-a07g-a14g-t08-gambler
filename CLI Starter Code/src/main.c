@@ -34,7 +34,6 @@
 #include <asf.h>
 #include "SerialConsole/SerialConsole.h"
 #include "CliThread.h"
-#include "DebugLogger.h"
 /******************************************************************************
  * Includes
  ******************************************************************************/
