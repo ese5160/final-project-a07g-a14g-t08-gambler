@@ -63,7 +63,11 @@ so I will attach to PB10 or PB11
 
 
 - **3. What are critical settings for the logic analyzer?**
+Set the analyzer to UART protocol with:
+Baud rate: 115200 (matching the firmware)
+Data bits: 8
+Parity: None
+Stop bits: 1
 
-
-
-
+- **Hardware connection**
+![Logic Analyzer Connection to UART Pins](images/A07G_HWconnection.png)
