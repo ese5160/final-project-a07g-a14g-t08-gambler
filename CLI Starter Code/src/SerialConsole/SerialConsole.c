@@ -263,13 +263,9 @@ void usart_read_callback(struct usart_module *const usart_module)
     usart_read_buffer_job(&usart_instance, (uint8_t *)&latestRx, 1);
     
     // Signal to the CLI thread that a character is available
-    // The semaphore is defined in CliThread.c, we need to declare it as extern here
-    extern SemaphoreHandle_t xRxSemaphore;
-    
-    // Use FromISR version since this is called from an interrupt context
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    
+    // The CLI thread handles all character processing including backspace characters
     if (xRxSemaphore != NULL) {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         xSemaphoreGiveFromISR(xRxSemaphore, &xHigherPriorityTaskWoken);
         
         // If a higher priority task was woken, request a context switch

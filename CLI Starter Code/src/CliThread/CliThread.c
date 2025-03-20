@@ -14,6 +14,8 @@
 /******************************************************************************
  * Defines
  ******************************************************************************/
+// Add version definition
+#define FIRMWARE_VERSION "0.0.1"  // <-- This is where you can change the version string
 
 /******************************************************************************
  * Variables
@@ -36,6 +38,21 @@ static const CLI_Command_Definition_t xResetCommand =
         (const pdCOMMAND_LINE_CALLBACK)CLI_ResetDevice,
         0};
 
+// Add new command definitions for version and ticks
+static const CLI_Command_Definition_t xVersionCommand =
+    {
+        "version",
+        "version: Prints the firmware version\r\n",
+        (const pdCOMMAND_LINE_CALLBACK)CLI_PrintVersion,
+        0};
+
+static const CLI_Command_Definition_t xTicksCommand =
+    {
+        "ticks",
+        "ticks: Prints the number of ticks since the scheduler was started\r\n",
+        (const pdCOMMAND_LINE_CALLBACK)CLI_PrintTicks,
+        0};
+
 static SemaphoreHandle_t xRxSemaphore = NULL; // Semaphore for UART reception synchronization
 
 /******************************************************************************
@@ -53,9 +70,11 @@ static void FreeRTOS_read(char *character);
 void vCommandConsoleTask(void *pvParameters)
 {
     // REGISTER COMMANDS HERE
-
     FreeRTOS_CLIRegisterCommand(&xClearScreen);
     FreeRTOS_CLIRegisterCommand(&xResetCommand);
+    // Register the new commands
+    FreeRTOS_CLIRegisterCommand(&xVersionCommand);
+    FreeRTOS_CLIRegisterCommand(&xTicksCommand);
 
     // Initialize the semaphore for UART reception
     xRxSemaphore = xSemaphoreCreateBinary();
@@ -261,5 +280,32 @@ BaseType_t xCliClearTerminalScreen(char *pcWriteBuffer, size_t xWriteBufferLen, 
 BaseType_t CLI_ResetDevice(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
 {
     system_reset();
+    return pdFALSE;
+}
+
+/**
+ * @brief CLI Command to print the firmware version
+ * @param[out] pcWriteBuffer Buffer where the command output is written
+ * @param[in] xWriteBufferLen Size of the write buffer
+ * @param[in] pcCommandString Full command string as entered by the user
+ * @return pdFALSE to indicate that the function has completed
+ */
+BaseType_t CLI_PrintVersion(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+{
+    snprintf((char *)pcWriteBuffer, xWriteBufferLen, "Firmware Version: %s\r\n", FIRMWARE_VERSION);
+    return pdFALSE;
+}
+
+/**
+ * @brief CLI Command to print the number of ticks since scheduler start
+ * @param[out] pcWriteBuffer Buffer where the command output is written
+ * @param[in] xWriteBufferLen Size of the write buffer
+ * @param[in] pcCommandString Full command string as entered by the user
+ * @return pdFALSE to indicate that the function has completed
+ */
+BaseType_t CLI_PrintTicks(int8_t *pcWriteBuffer, size_t xWriteBufferLen, const int8_t *pcCommandString)
+{
+    TickType_t currentTicks = xTaskGetTickCount();
+    snprintf((char *)pcWriteBuffer, xWriteBufferLen, "Tick count: %lu\r\n", (unsigned long)currentTicks);
     return pdFALSE;
 }
