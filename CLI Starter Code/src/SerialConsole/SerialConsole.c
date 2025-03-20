@@ -27,6 +27,7 @@
  * Includes
  ******************************************************************************/
 #include "SerialConsole.h"
+#include "CliThread.h" // Include to access CLI thread declarations
 
 /******************************************************************************
  * Defines
@@ -62,6 +63,9 @@ struct usart_module usart_instance;
 char rxCharacterBuffer[RX_BUFFER_SIZE]; 			   ///< Buffer to store received characters
 char txCharacterBuffer[TX_BUFFER_SIZE]; 			   ///< Buffer to store characters to be sent
 enum eDebugLogLevels currentDebugLevel = LOG_INFO_LVL; ///< Default debug level
+
+// External reference to the RX semaphore defined in CliThread.c
+extern SemaphoreHandle_t xRxSemaphore;
 
 /******************************************************************************
  * Global Functions
@@ -243,14 +247,34 @@ static void configure_usart_callbacks(void)
 
 /**************************************************************************/ 
 /**
- * @fn			void usart_read_callback(struct usart_module *const usart_module)
- * @brief		Callback called when the system finishes receives all the bytes requested from a UART read job
-		 Students to fill out. Please note that the code here is dummy code. It is only used to show you how some functions work.
- * @note
+ * @fn         void usart_read_callback(struct usart_module *const usart_module)
+ * @brief      Callback called when a character is received by the UART
+ * @details    This function stores the received character in a ring buffer
+ *             and signals the CLI thread that a character is available
+ * @param[in]  usart_module Pointer to the USART module that triggered the callback
+ * @note       This is called from an interrupt context, so minimal processing should be done
  *****************************************************************************/
 void usart_read_callback(struct usart_module *const usart_module)
 {
-	// ToDo: Complete this function 
+    // Store the received character in the circular buffer
+    circular_buf_put(cbufRx, latestRx);
+    
+    // Start a new read job for the next character
+    usart_read_buffer_job(&usart_instance, (uint8_t *)&latestRx, 1);
+    
+    // Signal to the CLI thread that a character is available
+    // The semaphore is defined in CliThread.c, we need to declare it as extern here
+    extern SemaphoreHandle_t xRxSemaphore;
+    
+    // Use FromISR version since this is called from an interrupt context
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    
+    if (xRxSemaphore != NULL) {
+        xSemaphoreGiveFromISR(xRxSemaphore, &xHigherPriorityTaskWoken);
+        
+        // If a higher priority task was woken, request a context switch
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    }
 }
 
 /**************************************************************************/ 

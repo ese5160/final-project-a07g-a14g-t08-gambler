@@ -36,6 +36,8 @@ static const CLI_Command_Definition_t xResetCommand =
         (const pdCOMMAND_LINE_CALLBACK)CLI_ResetDevice,
         0};
 
+static SemaphoreHandle_t xRxSemaphore = NULL; // Semaphore for UART reception synchronization
+
 /******************************************************************************
  * Forward Declarations
  ******************************************************************************/
@@ -54,6 +56,14 @@ void vCommandConsoleTask(void *pvParameters)
 
     FreeRTOS_CLIRegisterCommand(&xClearScreen);
     FreeRTOS_CLIRegisterCommand(&xResetCommand);
+
+    // Initialize the semaphore for UART reception
+    xRxSemaphore = xSemaphoreCreateBinary();
+    if (xRxSemaphore == NULL) {
+        // Handle error - semaphore creation failed
+        SerialConsoleWriteString("ERROR: Failed to create semaphore for UART reception\r\n");
+        vTaskDelete(NULL); // Delete this task
+    }
 
     uint8_t cRxedChar[2], cInputIndex = 0;
     BaseType_t xMoreDataToFollow;
@@ -208,16 +218,27 @@ void vCommandConsoleTask(void *pvParameters)
 }
 
 /**************************************************************************/ /**
- * @fn			void FreeRTOS_read(char* character)
- * @brief		STUDENTS TO COMPLETE. This function block the thread unless we received a character. How can we do this?
-                 There are multiple solutions! Check all the inter-thread communications available! See https://www.freertos.org/a00113.html
- * @details		STUDENTS TO COMPLETE.
- * @note
+ * @fn         void FreeRTOS_read(char* character)
+ * @brief      Blocks the thread until a character is received from UART
+ * @details    Uses a binary semaphore that's released by the UART callback when
+ *             a character is available in the reception buffer
+ * @param[out] character Pointer to store the received character
+ * @note       This function will block indefinitely until a character is received
  *****************************************************************************/
 static void FreeRTOS_read(char *character)
 {
-    // ToDo: Complete this function
-    vTaskSuspend(NULL); // We suspend ourselves. Please remove this when doing your code
+    // Wait for the semaphore to be given by the UART receive callback
+    xSemaphoreTake(xRxSemaphore, portMAX_DELAY);
+    
+    // Read a character from the circular buffer
+    uint8_t rxChar;
+    if (SerialConsoleReadCharacter(&rxChar) != -1) {
+        *character = rxChar;
+    } else {
+        // Buffer was empty - this shouldn't happen since the semaphore was given
+        // Could handle this error case if needed
+        *character = 0; // Default value
+    }
 }
 
 /******************************************************************************
