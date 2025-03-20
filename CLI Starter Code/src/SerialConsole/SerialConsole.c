@@ -147,12 +147,42 @@ void setLogLevel(enum eDebugLogLevels debugLevel)
 }
 
 /**
- * @brief Logs a message at the specified debug level.
+ * @brief      Logs a message at the specified debug level.
+ * @param[in]  level   The log level of this message
+ * @param[in]  format  Format string (similar to printf)
+ * @param[in]  ...     Variable arguments for format string
  */
 void LogMessage(enum eDebugLogLevels level, const char *format, ...)
 {
-    // Todo: Implement Debug Logger
-	// More detailed descriptions are in header file
+    // Check if the message should be printed based on current log level
+    if (level < currentDebugLevel) {
+        return; // Skip if message level is lower than current log level
+    }
+    
+    // Define a buffer for the formatted message
+    char buffer[256]; // Buffer to store the formatted message
+    
+    // Define log level prefixes
+    const char* logLevelPrefixes[] = {
+        "[INFO] ",
+        "[DEBUG] ",
+        "[WARNING] ",
+        "[ERROR] ",
+        "[FATAL] ",
+        ""  // LOG_OFF_LVL doesn't need a prefix
+    };
+    
+    // Add the log level prefix to buffer
+    strcpy(buffer, logLevelPrefixes[level]);
+    
+    // Use vsprintf to format the message with the variable arguments
+    va_list args;
+    va_start(args, format);
+    vsprintf(buffer + strlen(logLevelPrefixes[level]), format, args);
+    va_end(args);
+    
+    // Send the message to the terminal
+    SerialConsoleWriteString(buffer);
 }
 
 /*
