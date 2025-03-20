@@ -42,12 +42,73 @@
   - The software shall connect to a local network using the SAMW25’s Wi-Fi interface.
   - The user shall be able to configure game parameters (e.g., player count, game mode, dealer position) through a mobile or web-based interface.
 
-There are mainly 4 parts in the card dealing machine:
+
+## Block Diagram   
+
+![Block Diagram](./A07G/BlockDiagram.png)
+
+More Information in the Block Diagram:
 - A **DC motor** shall be used to control the number of cards dealt in a single turn in one direction
 - A **stepper motor** shall be used at the base to control the card dealing direction. (2 to 4 directions)
-- A **Reflective Photo Interrupt Sensor**
+- A **Reflective Photo Interrupt Sensor** shall be used to calculate the number of cards dealt by measuring the time it is obstructed during operation.
+- A **Light Sensor** will be placed in the card box to monitor the remaining cards, ensuring the system can provide real-time updates on card availability.
+- The software shall implement a PRNG to randomize the sequence of card dealing, ensuring fairness. eg. dealing different number cards(DC motor) in each turn and shuffle the dealing order (Stepper motor) to ensure random dealing.
+- Select the player count, game mode, dealer position through a mobile or web-based interface via Wifi Task.
+- Read the data from Wifi Task, processing the data and send corresponding control commands(System control task) to the actuator and sensor tasks. And displaying the game mode details, the number of players, and the selected randomization method in the screen.
 
 
+## Flowcharts  
+
+![Block Diagram](./A07G/FlowCharts.png)
+
+
+
+### **1. Initialization**
+- **Initialize ports** to prepare for operation.
+- **Receive game settings via WiFi**, including:
+  - Game mode
+  - Number of players
+  - Randomization method
+
+### **2. Game Mode Processing**
+- Invoke different functions based on received data.
+- Each mode includes:
+  - **Game mode type**
+  - **Number of players**
+  - **Shuffle method**
+- **Display game mode details on the I2C screen**.
+
+### **3. Dealing Process**
+- **Wait for "start dealing" command**.
+- If received:
+  1. **Deal cards for one turn**.
+  2. **Complete the turn**.
+- Check for **new WiFi data updates** after each turn.
+
+---
+
+### **4. Sensor-Based Interaction (Interrupt Handling)**
+#### **Checking for Remaining Cards**
+- **Light sensor detects card availability**:
+  - **No cards detected** → **Pause operation & display "Reload cards"**.
+  - **Cards available** → Continue dealing.
+
+#### **Interrupt Handling**
+- **If interrupt is triggered** → Notify user to **reload cards**.
+- **If no interrupt is triggered** → Nothing Happen.
+
+
+
+### **5. Summary**
+- **WiFi Communication**: Retrieves game settings dynamically.
+- **Game Mode Handling**: Displays settings and manages game mode.
+- **Card Dealing**: Executes upon start command.
+- **Sensor Monitoring**: Uses **light sensor interrupts** to detect cards.
+- **User Prompts**: Notifies when action is required.
+
+# 2. Understanding the Starter Code
+
+## 1.
 
 # 4.Wiretap the convo
 
