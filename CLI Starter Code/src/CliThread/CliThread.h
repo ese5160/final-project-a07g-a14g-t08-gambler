@@ -12,6 +12,8 @@
 #include "SerialConsole.h"
 #include "FreeRTOS_CLI.h"
 
+// Add this declaration
+extern SemaphoreHandle_t xRxSemaphore; // Semaphore for UART reception synchronization
 
 #define CLI_TASK_SIZE	256		///<STUDENT FILL
 #define CLI_PRIORITY (configMAX_PRIORITIES - 1) ///<STUDENT FILL

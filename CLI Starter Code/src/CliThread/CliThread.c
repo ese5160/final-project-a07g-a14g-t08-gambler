@@ -53,7 +53,7 @@ static const CLI_Command_Definition_t xTicksCommand =
         (const pdCOMMAND_LINE_CALLBACK)CLI_PrintTicks,
         0};
 
-static SemaphoreHandle_t xRxSemaphore = NULL; // Semaphore for UART reception synchronization
+SemaphoreHandle_t xRxSemaphore = NULL; // Semaphore for UART reception synchronization
 
 /******************************************************************************
  * Forward Declarations

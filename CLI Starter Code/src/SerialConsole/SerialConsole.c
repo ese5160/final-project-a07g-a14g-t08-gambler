@@ -64,9 +64,6 @@ char rxCharacterBuffer[RX_BUFFER_SIZE]; 			   ///< Buffer to store received char
 char txCharacterBuffer[TX_BUFFER_SIZE]; 			   ///< Buffer to store characters to be sent
 enum eDebugLogLevels currentDebugLevel = LOG_INFO_LVL; ///< Default debug level
 
-// External reference to the RX semaphore defined in CliThread.c
-extern SemaphoreHandle_t xRxSemaphore;
-
 /******************************************************************************
  * Global Functions
  ******************************************************************************/
