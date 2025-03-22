@@ -108,7 +108,154 @@ More Information in the Block Diagram:
 
 # 2. Understanding the Starter Code
 
-## 1.
+**1.What does “InitializeSerialConsole()” do? In said function, what is “cbufRx” and “cbufTx”? What type of data structure is it?**  
+
+1. Initializes two circular buffers, `cbufRx` and `cbufTx`, using the function `circular_buf_init()`. These buffers are used to store received and transmitted characters respectively.
+2. Configures the USART hardware using `configure_usart()`, which sets parameters like baud rate (115200), parity, and pin settings.
+3. Registers USART read and write callbacks with `configure_usart_callbacks()` to handle asynchronous UART communication.
+4. Starts the UART read using `usart_read_buffer_job()` to begin receiving characters from the UART interface.  
+
+
+The variables `cbufRx` and `cbufTx` are both of type `cbuf_handle_t`, which is a pointer to a circular buffer structure (`circular_buf_t`). This structure is implemented in `circular_buffer.c`. It supports FIFO operations for managing UART data efficiently.
+
+**2.How are `cbufRx` and `cbufTx` initialized? Where is the library that defines them (please list the \*.c file they come from).**
+
+Initialization:
+In the `InitializeSerialConsole()` function they are initialized using the function `circular_buf_init` function, 
+they are initialized with buffer and size:
+
+```c
+cbuf_handle_t circular_buf_init(uint8_t* buffer, size_t size)
+{
+	cbuf_handle_t cbuf = malloc(sizeof(circular_buf_t)); // Allocates the struct
+	cbuf->buffer = buffer;    // Assigns the external buffer
+	cbuf->max = size;         // Stores the buffer size
+	circular_buf_reset(cbuf); // Sets head=0, tail=0, full=false
+	return cbuf;
+}
+```
+
+Inside `circular_buf_init()`, which does the following:
+
+1. `malloc(sizeof(circular_buf_t))`
+   - Allocates memory for the struct and returns a pointer to this struct, which is `cbuf_handle_t`.
+
+2. `cbuf->buffer = buffer;`
+   - Points the internal `buffer` field to the memory `rxCharacterBuffer` or `txCharacterBuffer`.
+
+3. `cbuf->max = size;`
+   - Stores the total buffer capacity (e.g. `512` bytes).
+
+4. `circular_buf_reset(cbuf);`
+   - Initializes:
+     ```c
+     cbuf->head = 0;
+     cbuf->tail = 0;
+     cbuf->full = false;
+     ```
+
+They two just share the same logic, but use different buffers for RX and TX.
+
+
+They are defined in **circular_buffer.h** and implementation in **circular_buffer.c**
+
+**3.Where are the character arrays where the RX and TX characters are being stored at the end? Please mention their name and size.**  
+**Tip: Please note cBufRx and cBufTx are structures.**
+
+The character arrays where the RX and TX characters are stored are `rxCharacterBuffer` and `txCharacterBuffer`, each with a size of 512 bytes. These arrays are defined in `SerialConsole.c` as:
+
+```c
+#define RX_BUFFER_SIZE 512 //< Size of character buffer for RX, in bytes
+#define TX_BUFFER_SIZE 512 //< Size of character buffers for TX, in bytes
+//.......
+char rxCharacterBuffer[RX_BUFFER_SIZE];  //< Buffer to store received characters
+char txCharacterBuffer[TX_BUFFER_SIZE]; //< Buffer to store characters to be sent
+```
+
+
+**4.Where are the interrupts for UART character received and UART character sent defined?**   
+
+The interrupts for UART character received and UART character sent are defined as **callback functions** in `SerialConsole.c` :
+
+- UART Character Received Interrupt  
+   Defined in the function:
+   ```c
+   void usart_read_callback(struct usart_module *const usart_module)
+   ```
+- UART Character Sent Interrupt  
+Defined in the function:
+   ```c
+   void usart_write_callback(struct usart_module *const usart_module)
+   ```
+
+**5.What are the callback functions that are called when:**  
+1. A character is received? (RX):  
+ - **Callback Function:** `usart_read_callback(struct usart_module *const usart_module)`. It is called when the UART receives a character. Typically registered and enabled in the UART configuration to handle incoming data.
+
+
+2. A character has been sent? (TX) 
+  - **Callback Function:** `usart_write_callback(struct usart_module *const usart_module)`. It is called when the UART has finished transmitting a character. It's set up during the UART initialization to handle outgoing data.
+
+
+**6.Explain what is being done on each of these two callbacks and how they relate to the cbufRx and cbufTx buffers.**
+
+- **`usart_read_callback()` – Character Received (RX):**  
+  - What it does:  
+    When a character is received by the UART, it is first stored in `latestRx`.  
+    The callback then puts this character into the RX circular buffer (`cbufRx`) using `circular_buf_put()`,  
+    and immediately starts a new asynchronous read using `usart_read_buffer_job()` to keep receiving the next character.
+
+  - Relation to cbufRx:  
+    `cbufRx` holds all the received characters from UART. This callback ensures that every incoming character is saved into the buffer so it can be retrieved later by the main program, without missing any data.
+
+
+- **`usart_write_callback()` – Character Sent (TX):**  
+  - What it does:  
+    After a character has been transmitted, it checks if there are more characters in the TX buffer (`cbufTx`). If there is another character, it sends it using `usart_write_buffer_job()`
+
+  - Relation to cbufTx:  
+    `cbufTx` holds all characters that need to be sent. This callback keeps the transmission going until the buffer is empty.  
+
+    
+**7.Draw a diagram that explains the program flow for UART receive – starting with the user typing a character and ending with how that characters ends up in the circular buffer “cbufRx”. Please make reference to specific functions in the starter code.**  
+
+As I just mentioned and explain the process above, and draw it as following:  
+![alt text](./A07G/A07G_Part2_Q7.png)
+
+
+**8.Draw a diagram that explains the program flow for the UART transmission – starting from a string added by the program to the circular buffer “cbufTx” and ending on characters being shown on the screen of a PC (On Teraterm, for example). Please make reference to specific functions in the starter code.**  
+
+As I just mentioned and explain the process above, and draw it as following:  
+![alt text](./A07G/A07G_Part2_Q8.png)
+
+
+**9.What is done on the function “startStasks()” in main.c? How many threads are started?**
+
+The `StartTasks()` function is for initializing FreeRTOS tasks after the system and hardware are initialized.
+
+**What happen:**
+1. **Print available heap memory before creating tasks**
+   ```c
+   snprintf(bufferPrint, 64, "Heap before starting tasks: %d\r\n", xPortGetFreeHeapSize());
+   SerialConsoleWriteString(bufferPrint);
+   ```
+2. **Create the CLI task**
+    ```c
+    xTaskCreate(vCommandConsoleTask, "CLI_TASK", CLI_TASK_SIZE, NULL, CLI_PRIORITY, &cliTaskHandle);
+    ```
+3. **Print heap memory after creating the task**
+    ```c
+    snprintf(bufferPrint, 64, "Heap after starting CLI: %d\r\n", xPortGetFreeHeapSize());
+    SerialConsoleWriteString(bufferPrint);
+    ```
+
+**How many threads are started?**  
+Only 1 thread is started in StartTasks():  
+`xTaskCreate(vCommandConsoleTask, "CLI_TASK", CLI_TASK_SIZE, NULL, CLI_PRIORITY, &cliTaskHandle)`
+
+# 3. Debug Logger Module 
+Refer to the repo.
+
 
 # 4.Wiretap the convo
 
@@ -135,3 +282,14 @@ Stop bits: 1
 
 - **decoded message**
 ![ decoded message](images/A07G_4.3.png)
+
+
+# 5. Complete the CLI
+
+Refer to the repo.
+
+# 6.Add CLI commands  
+
+1. Refer to the repo.
+
+2. [Video Link](https://youtu.be/49PW76iHink?si=R6NvmiNRdzQxdPZk)  
