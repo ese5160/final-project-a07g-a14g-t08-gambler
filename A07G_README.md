@@ -132,3 +132,6 @@ Stop bits: 1
 
 - **Hardware connection**
 ![Logic Analyzer Connection to UART Pins](images/A07G_HWconnection.png)
+
+- **decoded message**
+![ decoded message](images/A07G_4.3.png)
