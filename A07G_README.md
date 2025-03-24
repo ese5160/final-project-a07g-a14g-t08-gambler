@@ -283,6 +283,8 @@ Stop bits: 1
 - **decoded message**
 ![ decoded message](images/A07G_4.3.png)
 
+- **Capture File**  
+[Session 0.sal](https://github.com/ese5160/final-project-a07g-a14g-t08-gambler/blob/main/A07G/Session%200.sal)  
 
 # 5. Complete the CLI
 
